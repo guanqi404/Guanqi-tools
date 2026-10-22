@@ -144,18 +144,16 @@ button {
             let tagsInput = document.getElementById('tags').value;
             const desc = document.getElementById('desc').value.trim() || "暂无描述";
             
-            // 把标签里的中文逗号替换成英文逗号，防止代码报错
             tagsInput = tagsInput.replace(/，/g, ',');
             
             const tagsArray = tagsInput ? tagsInput.split(',').map(t => `"${t.trim()}"`).join(', ') : "";
             const id = filename.split('.')[0];
 
-            // 🌟 核心智能分类逻辑
             let folder = "fh"; 
             if (category === "败瓦") {
                 folder = "bw";
             } else if (category === "流光") {
-                folder = "lg"; // 流光对应 lg 文件夹
+                folder = "lg"; 
             }
 
             const code = `  {
