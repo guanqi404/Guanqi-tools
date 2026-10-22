@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>观梦居 · 代码收纳盒</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    
+    <style>
+        /* =========================================
+           这里直接借用了看板的全局变量和基础设置
+           ========================================= */
+        :root {
+            --bg: #f5f5f0; --primary: #2d6b58; --text: #333; --muted: #888;
+            --card-bg: #ffffff; --border: #eaeaea;
+            
+            --code-bg: #fafaf8;      
+            --code-border: #e0e0d8;  
+            --text-code: #444;    
+            --hl-string: #666;    
+            --hl-number: #2d6b58;    
+            --hl-comment: #b0b0b0;   
+            --hl-tag: #1e5069;       
+            --hl-attr: #2d6b58;      
+        }
+        
+        body { font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 40px 20px; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 1200px; }
+        
+        /* 👇 完美复刻看板的 Header，一个像素都不差 */
+        .header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 30px; border-bottom: 1px solid var(--border); padding-bottom: 20px; }
+	.header h1 { margin: 0; color: var(--primary); font-size: 28px; letter-spacing: 2px; }
+        .board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+
+        /* 下方内容区布局 */
+        .content-layout { display: grid; grid-template-columns: 240px 1fr; gap: 30px; align-items: start; }
+
+        /* ================= 左侧目录 ================= */
+        .sidebar {
+            background: var(--card-bg); border-radius: 12px; padding: 24px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03); border: 1px solid rgba(0,0,0,0.02);
+        }
+        .sidebar-title { margin-top: 0; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+        .sidebar-title h2 { font-size: 20px; color: var(--primary); margin: 0 0 6px 0; letter-spacing: 1px; font-weight: 600; }
+        .sidebar-title p { font-size: 14px; color: var(--muted); margin: 0; }
+        .sidebar ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+        .sidebar li button {
+            width: 100%; text-align: left; background: transparent; border: none; color: #555; font-size: 14px; padding: 12px 16px; border-radius: 8px; cursor: pointer; transition: all 0.2s; font-weight: 500; font-family: inherit;
+        }
+        .sidebar li button:hover { background: rgba(45, 107, 88, 0.05); color: var(--primary); transform: translateX(4px); }
+        .sidebar li button.active { background: rgba(45, 107, 88, 0.1); color: var(--primary); font-weight: 600; }
+
+        /* ================= 右侧代码区 ================= */
+        .main-content { min-width: 0; }
+        .code-card { background: var(--card-bg); border-radius: 12px; padding: 24px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); border: 1px solid rgba(0,0,0,0.02); }
+        .code-container { position: relative; background: var(--code-bg); border: 1px solid var(--code-border); border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; }
+        .code-header-bar { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--code-border); background: #ffffff; }
+        
+        .code-lang { font-size: 13px; color: #888; font-family: 'Fira Code', monospace; font-weight: 600; }
+        .code-actions { display: flex; gap: 16px; }
+        .action-btn { display: flex; align-items: center; gap: 4px; background: transparent; border: none; font-size: 13px; color: #777; cursor: pointer; font-family: 'Quicksand', sans-serif; font-weight: 600; transition: color 0.2s; }
+        .action-btn:hover { color: var(--primary); }
+
+        .code-content { display: flex; padding: 16px 0; }
+        .line-numbers { padding: 0 16px; text-align: right; font-family: 'Fira Code', monospace; font-size: 14.5px; font-weight: 500; line-height: 1.9; color: #c0c0c0; user-select: none; border-right: 1px solid #f0f0f0; background: #fcfcfa; }
+        
+        pre { margin: 0; padding: 0 20px; font-family: 'Fira Code', monospace; font-size: 14.5px; font-weight: 500; line-height: 1.9; color: var(--text-code); white-space: pre-wrap; word-wrap: break-word; flex: 1; }
+
+        /* 语法高亮 */
+        .hl-comment { color: var(--hl-comment); font-style: italic; }
+        .hl-string { color: var(--hl-string); }
+        .hl-number { color: var(--hl-number); font-weight: 500;}
+        .hl-tag { color: var(--hl-tag); font-weight: 500; }
+        .hl-attr { color: var(--hl-attr); }
+        .hl-punct { color: #888; }
+
+        .code-container-wrapper { display: none; }
+        .code-container-wrapper.active { display: block; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- 顶部 Header（文字已完美替换） -->
+    <div class="header">
+        <div>
+            <h1>CODE LIBRARY</h1>
+            <p>支持一键复制 · 点击左侧切换分类</p>
+        </div>
+    </div>
+
+    <!-- 下方左右分栏 -->
+    <div class="content-layout">
+        
+        <!-- 左侧目录 -->
+        <aside class="sidebar">
+            <div class="sidebar-title">
+                <h2>SNIPPET DIRECTORY</h2>
+                <p>选择代码分类</p>
+            </div>
+            <ul>
+                <li><button class="active" onclick="switchTab('tab-1', this)">悬浮返回按钮</button></li>
+                <li><button onclick="switchTab('tab-2', this)">排版样式 (演示)</button></li>
+            </ul>
+        </aside>
+
+        <!-- 右侧代码区 -->
+        <main class="main-content">
+            
+            <!-- 代码块 1 -->
+            <div id="tab-1" class="code-container-wrapper active">
+                <div class="code-card">
+                    <div class="code-container">
+                        <div class="code-header-bar">
+                            <div class="code-lang">html</div>
+                            <div class="code-actions">
+                                <button class="action-btn" onclick="copyCode('code-1', this)"><span>📋 复制</span></button>
+                            </div>
+                        </div>
+                        <div class="code-content">
+                            <div class="line-numbers" id="lines-1"></div>
+                            <pre><code id="code-1"><span class="hl-comment">&lt;!-- 悬浮返回按钮 --&gt;</span>
+<span class="hl-punct">&lt;</span><span class="hl-tag">a</span> <span class="hl-attr">href</span><span class="hl-punct">=</span><span class="hl-string">"index.html"</span> 
+   <span class="hl-attr">style</span><span class="hl-punct">=</span><span class="hl-string">"position: fixed; bottom: 30px; right: 30px; 
+          background-color: #2d6b58; color: #ffffff; 
+          padding: 12px 20px; border-radius: 30px; 
+          text-decoration: none; font-size: 14px; font-weight: bold; 
+          box-shadow: 0 4px 12px rgba(45, 107, 88, 0.3); 
+          transition: all 0.3s ease; z-index: 9999; 
+          display: flex; align-items: center; gap: 6px;"</span>
+   <span class="hl-attr">onmouseover</span><span class="hl-punct">=</span><span class="hl-string">"this.style.backgroundColor='#1d4a3b'; 
+                this.style.transform='translateY(-3px)';"</span> 
+   <span class="hl-attr">onmouseout</span><span class="hl-punct">=</span><span class="hl-string">"this.style.backgroundColor='#2d6b58'; 
+               this.style.transform='none';"</span><span class="hl-punct">&gt;</span>
+    <span class="hl-punct">&lt;</span><span class="hl-tag">span</span><span class="hl-punct">&gt;</span>←<span class="hl-punct">&lt;/</span><span class="hl-tag">span</span><span class="hl-punct">&gt;</span> 返回工具箱
+<span class="hl-punct">&lt;/</span><span class="hl-tag">a</span><span class="hl-punct">&gt;</span></code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 代码块 2 -->
+            <div id="tab-2" class="code-container-wrapper">
+                <div class="code-card">
+                    <div class="code-container">
+                        <div class="code-header-bar">
+                            <div class="code-lang">css</div>
+                            <div class="code-actions">
+                                <button class="action-btn" onclick="copyCode('code-2', this)"><span>📋 复制</span></button>
+                            </div>
+                        </div>
+                        <div class="code-content">
+                            <div class="line-numbers" id="lines-2"></div>
+                            <pre><code id="code-2"><span class="hl-attr">.card</span> <span class="hl-punct">{</span>
+    <span class="hl-attr">background</span><span class="hl-punct">:</span> <span class="hl-number">#ffffff</span>;
+    <span class="hl-attr">border-radius</span><span class="hl-punct">:</span> <span class="hl-number">8px</span>;
+    <span class="hl-attr">padding</span><span class="hl-punct">:</span> <span class="hl-number">16px</span>;
+    <span class="hl-attr">box-shadow</span><span class="hl-punct">:</span> <span class="hl-number">0 2px 8px</span> <span class="hl-string">rgba(0,0,0,0.04)</span>;
+<span class="hl-punct">}</span></code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+</div>
+
+<!-- 右下角悬浮返回工具箱 -->
+<a href="index.html" style="position: fixed; bottom: 30px; right: 30px; background-color: #2d6b58; color: #ffffff; padding: 12px 20px; border-radius: 30px; text-decoration: none; font-size: 14px; font-weight: bold; box-shadow: 0 4px 12px rgba(45, 107, 88, 0.3); transition: all 0.3s ease; z-index: 9999; display: flex; align-items: center; gap: 6px;" onmouseover="this.style.backgroundColor='#1d4a3b'; this.style.transform='translateY(-3px)'; this.style.boxShadow='0 6px 16px rgba(45, 107, 88, 0.4)';" onmouseout="this.style.backgroundColor='#2d6b58'; this.style.transform='none'; this.style.boxShadow='0 4px 12px rgba(45, 107, 88, 0.3)';">
+    <span>←</span> 返回工具箱
+</a>
+
+<script>
+    function renderLines(codeId, lineId) {
+        const codeElement = document.getElementById(codeId);
+        if(!codeElement) return;
+        const text = codeElement.innerText;
+        const lines = text.split('\n');
+        let lineHTML = '';
+        for (let i = 1; i <= lines.length; i++) {
+            lineHTML += i + '<br>';
+        }
+        document.getElementById(lineId).innerHTML = lineHTML;
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        renderLines('code-1', 'lines-1');
+        renderLines('code-2', 'lines-2');
+    });
+
+    function switchTab(tabId, btnElement) {
+        document.querySelectorAll('.code-container-wrapper').forEach(el => el.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+        document.querySelectorAll('.sidebar button').forEach(btn => btn.classList.remove('active'));
+        btnElement.classList.add('active');
+    }
+
+    function copyCode(elementId, btnElement) {
+        const codeText = document.getElementById(elementId).innerText;
+        navigator.clipboard.writeText(codeText).then(() => {
+            const span = btnElement.querySelector('span');
+            const originalText = span.innerText;
+            span.innerText = '✅ 已复制';
+            span.style.color = 'var(--primary)'; 
+            setTimeout(() => {
+                span.innerText = originalText;
+                span.style.color = ''; 
+            }, 1500);
+        });
+    }
+</script>
+
+</body>
+</html>

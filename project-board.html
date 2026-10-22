@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>观梦居 · 项目看板</title>
+    <style>
+        :root {
+            --bg: #f5f5f0; --primary: #2d6b58; --text: #333; --muted: #888;
+            --card-bg: #ffffff; --border: #eaeaea;
+        }
+        body { font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 40px 20px; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 1200px; }
+        .header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 30px; border-bottom: 1px solid var(--border); padding-bottom: 20px; }
+        .header h1 { margin: 0; color: var(--primary); font-size: 28px; letter-spacing: 2px; }
+        
+        .board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+        
+        /* 列容器 */
+        .column { background: #eaeae5; border-radius: 12px; padding: 16px; min-height: 500px; transition: background 0.2s; }
+        /* 拖拽悬浮时的列高亮 */
+        .column.drag-over { background: #dfe0da; border: 2px dashed var(--primary); }
+        
+        .col-header { font-size: 16px; font-weight: bold; color: #555; margin-bottom: 16px; display: flex; justify-content: space-between; pointer-events: none;}
+        .count { background: #d1d1cc; color: #666; padding: 2px 8px; border-radius: 12px; font-size: 12px; }
+
+        /* 卡片样式 */
+        .card { 
+            background: var(--card-bg); border-radius: 8px; padding: 16px; margin-bottom: 12px; 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid transparent; 
+            transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s; cursor: grab;
+        }
+        .card:active { cursor: grabbing; }
+        .card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); border-color: var(--primary); }
+        
+        /* 正在被拖拽的卡片变半透明 */
+        .card.dragging { opacity: 0.4; transform: scale(0.98); }
+
+        .card-tag { font-size: 12px; color: var(--primary); background: rgba(45, 107, 88, 0.1); padding: 2px 8px; border-radius: 4px; display: inline-block; margin-bottom: 8px; pointer-events: none;}
+        .card-title { font-size: 15px; font-weight: 500; margin-bottom: 12px; pointer-events: none;}
+        
+        .progress-bar { height: 4px; background: #eee; border-radius: 2px; margin-bottom: 12px; overflow: hidden; pointer-events: none;}
+        .progress-fill { height: 100%; background: var(--primary); width: 0%; transition: width 0.3s; pointer-events: none;}
+
+        .btn-toggle { background: transparent; border: 1px solid var(--border); color: var(--muted); padding: 6px; border-radius: 6px; font-size: 12px; cursor: pointer; width: 100%; }
+        .btn-toggle:hover { background: var(--primary); color: #fff; }
+
+        /* 弹窗样式 */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); justify-content: center; align-items: center; z-index: 1000; }
+        .modal.active { display: flex; }
+        .modal-content { background: #fff; width: 90%; max-width: 500px; border-radius: 12px; padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .modal-header h2 { margin: 0; font-size: 20px; color: var(--primary); }
+        .close-btn { background: none; border: none; font-size: 24px; cursor: pointer; color: var(--muted); }
+        .task-list { list-style: none; padding: 0; margin: 0; }
+        .task-item { display: flex; align-items: flex-start; margin-bottom: 12px; padding: 8px; border-radius: 6px; cursor: pointer; transition: 0.2s; }
+        .task-item:hover { background: #f9f9f9; }
+        .task-item input[type="checkbox"] { margin-top: 3px; margin-right: 12px; cursor: pointer; accent-color: var(--primary); }
+        .task-text { font-size: 14px; color: #444; line-height: 1.5; }
+        .task-item.completed .task-text { text-decoration: line-through; color: var(--muted); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <div>
+            <h1>PROJECT BOARD</h1>
+            <p>支持拖拽换列 · 点击卡片查看详情</p>
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <!-- 新增导入导出按钮 -->
+            <button onclick="exportData()" style="border:1px solid #ddd; background:#fff; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:13px; color:#333;">📤 导出备份</button>
+            <button onclick="document.getElementById('fileInput').click()" style="border:1px solid #ddd; background:#fff; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:13px; color:#333;">📥 导入备份</button>
+            <input type="file" id="fileInput" accept=".json" style="display: none;" onchange="importData(event)">
+            <button onclick="resetData()" style="border:1px solid #d72b2b; background:#fff; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:13px; color:#d72b2b;">重置</button>
+        </div>
+    </div>
+
+    <div class="board">
+        <!-- 看板三个列保持原样 -->
+        <div class="column" id="col-todo" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'todo')">
+            <div class="col-header">待办灵感 <span class="count" id="count-todo">0</span></div>
+            <div id="list-todo" class="drop-zone"></div>
+        </div>
+        <div class="column" id="col-doing" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'doing')">
+            <div class="col-header">正在施工 <span class="count" id="count-doing">0</span></div>
+            <div id="list-doing" class="drop-zone"></div>
+        </div>
+        <div class="column" id="col-done" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'done')">
+            <div class="col-header">完美落地 <span class="count" id="count-done">0</span></div>
+            <div id="list-done" class="drop-zone"></div>
+        </div>
+    </div>
+</div>
+
+<!-- 弹窗 -->
+<div class="modal" id="taskModal" onclick="closeModal(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h2 id="modal-title">项目名称</h2>
+            <button class="close-btn" onclick="closeModal()">&times;</button>
+        </div>
+        <ul class="task-list" id="modal-task-list"></ul>
+    </div>
+</div>
+
+<script>
+    // 🌟 保持你原有的数据
+    const defaultData = [
+        { id: 1, title: "观梦居：基础修缮与细节", category: "观梦居", status: "doing", tasks: [ { text: "修复首页排版缩放错位 Bug", done: false }, { text: "确保画廊数据按时间倒序排列", done: true }, { text: "微调新图裁切比例，防止切脸", done: false }, { text: "排查悬停卡顿，优化动图性能", done: false } ] },
+        { id: 2, title: "观梦居：内容填坑与功能", category: "观梦居", status: "todo", tasks: [ { text: "新增【异常特征生成器】身份卡", done: false }, { text: "新增【友人帐/观测者名录】", done: false }, { text: "接入 Markdown 解析写随笔", done: false }, { text: "游戏实况归档外链", done: false }, { text: "右下角工具箱重构加入外链", done: false } ] },
+        { id: 3, title: "Guanqi-tools 工作站", category: "工具", status: "doing", tasks: [ { text: "重构导航页，引入弹出式悬浮目录", done: false }, { text: "资产安全防扒研究 (Base64/混淆)", done: false }, { text: "打包成桌面 EXE 软件", done: false } ] },
+        { id: 4, title: "拼豆管家：核心功能开发", category: "工具", status: "todo", tasks: [ { text: "一键批量补豆/消耗(1/3, 1/2)", done: false }, { text: "库存红线预警 (<300变红)", done: false }, { text: "流水账本自动记录", done: false }, { text: "Canvas 提取 AI 识别图纸", done: false }, { text: "图纸某色号一键高亮", done: false } ] },
+        { id: 5, title: "生活效率工具矩阵", category: "工具", status: "todo", tasks: [ { text: "极简灵感记录站", done: false }, { text: "健康/体重管理面板(Chart.js)", done: false }, { text: "群聊机器人 (查库存/记灵感)", done: false } ] },
+        { id: 6, title: "VRChat 与视频企划", category: "VRC/视频", status: "todo", tasks: [ { text: "学习 Blender / Unity 改模", done: false }, { text: "AI 辅助换装变身动画实现", done: false }, { text: "《外卖差评评审员》第一期", done: false } ] },
+        { id: 7, title: "长远规划 (暂缓)", category: "未来", status: "todo", tasks: [ { text: "AI 语音陪学搭子", done: false }, { text: "所有工具的商业化售卖版", done: false } ] }
+    ];
+
+    let projects = JSON.parse(localStorage.getItem('guanqiProjectsV3')) || defaultData;
+    let currentProjectId = null;
+    let draggedProjectId = null;
+
+    function saveData() { localStorage.setItem('guanqiProjectsV3', JSON.stringify(projects)); }
+
+    // 渲染看板 (保持不变)
+    function renderBoard() {
+        const lists = { todo: document.getElementById('list-todo'), doing: document.getElementById('list-doing'), done: document.getElementById('list-done') };
+        for (let key in lists) lists[key].innerHTML = '';
+        let counts = { todo: 0, doing: 0, done: 0 };
+
+        projects.forEach(p => {
+            counts[p.status]++;
+            const completedTasks = p.tasks.filter(t => t.done).length;
+            const progress = Math.round((completedTasks / p.tasks.length) * 100) || 0;
+            const cardHTML = `
+                <div class="card" id="card-${p.id}" draggable="true" 
+                     ondragstart="handleDragStart(event, ${p.id})" 
+                     ondragend="handleDragEnd(event)"
+                     onclick="openModal(${p.id})">
+                    <div class="card-tag">${p.category}</div>
+                    <div class="card-title">${p.title}</div>
+                    <div class="progress-bar"><div class="progress-fill" style="width: ${progress}%"></div></div>
+                </div>
+            `;
+            if (lists[p.status]) lists[p.status].insertAdjacentHTML('beforeend', cardHTML);
+        });
+
+        document.getElementById('count-todo').innerText = counts.todo;
+        document.getElementById('count-doing').innerText = counts.doing;
+        document.getElementById('count-done').innerText = counts.done;
+    }
+
+    // 拖拽逻辑 (保持不变)
+    function handleDragStart(e, id) { draggedProjectId = id; e.target.classList.add('dragging'); e.dataTransfer.setData('text/plain', id); e.dataTransfer.effectAllowed = 'move'; }
+    function handleDragEnd(e) { e.target.classList.remove('dragging'); document.querySelectorAll('.column').forEach(col => col.classList.remove('drag-over')); }
+    function handleDragOver(e) { e.preventDefault(); const column = e.target.closest('.column'); if (column) column.classList.add('drag-over'); }
+    function handleDragLeave(e) { const column = e.target.closest('.column'); if (column) column.classList.remove('drag-over'); }
+    function handleDrop(e, newStatus) {
+        e.preventDefault(); const column = e.target.closest('.column'); if (column) column.classList.remove('drag-over');
+        if (draggedProjectId !== null) {
+            const project = projects.find(p => p.id === draggedProjectId);
+            if (project && project.status !== newStatus) { project.status = newStatus; saveData(); renderBoard(); }
+            draggedProjectId = null;
+        }
+    }
+
+    // 弹窗与任务逻辑 (保持不变)
+    function openModal(id) {
+        if (draggedProjectId !== null) return; 
+        currentProjectId = id;
+        const p = projects.find(item => item.id === id);
+        document.getElementById('modal-title').innerText = p.title;
+        const listContainer = document.getElementById('modal-task-list');
+        listContainer.innerHTML = '';
+        p.tasks.forEach((task, index) => {
+            const li = document.createElement('li');
+            li.className = `task-item ${task.done ? 'completed' : ''}`;
+            li.innerHTML = `<input type="checkbox" ${task.done ? 'checked' : ''} onchange="toggleTask(${index})"><span class="task-text">${task.text}</span>`;
+            li.onclick = (e) => { if(e.target.tagName !== 'INPUT') { const cb = li.querySelector('input'); cb.checked = !cb.checked; toggleTask(index); } };
+            listContainer.appendChild(li);
+        });
+        document.getElementById('taskModal').classList.add('active');
+    }
+    function closeModal(e) { if (e && e.target !== e.currentTarget && e.target.className !== 'close-btn') return; document.getElementById('taskModal').classList.remove('active'); currentProjectId = null; renderBoard(); }
+    function toggleTask(taskIndex) {
+        const p = projects.find(item => item.id === currentProjectId);
+        p.tasks[taskIndex].done = !p.tasks[taskIndex].done;
+        const items = document.querySelectorAll('.task-item');
+        items[taskIndex].classList.toggle('completed', p.tasks[taskIndex].done);
+        saveData();
+    }
+
+    // 🌟 新增：导出数据文件
+    function exportData() {
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(projects, null, 2));
+        const downloadAnchor = document.createElement('a');
+        downloadAnchor.setAttribute("href", dataStr);
+        downloadAnchor.setAttribute("download", "guanqi_projects_backup.json");
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        downloadAnchor.remove();
+    }
+
+    // 🌟 新增：导入数据文件
+    function importData(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const importedData = JSON.parse(e.target.result);
+                if (Array.isArray(importedData)) {
+                    projects = importedData;
+                    saveData();
+                    renderBoard();
+                    alert("✅ 导入成功！");
+                } else { alert("❌ 数据格式错误。"); }
+            } catch (err) { alert("❌ 读取文件失败。"); }
+        };
+        reader.readAsText(file);
+        event.target.value = ''; // 允许重复导入同一个文件
+    }
+
+    function resetData() {
+        if (confirm("确定要重置所有数据吗？")) {
+            projects = JSON.parse(JSON.stringify(defaultData));
+            saveData(); renderBoard();
+        }
+    }
+
+    renderBoard();
+</script>
+<a href="index.html" style="
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    background-color: #2d6b58;
+    color: #ffffff;
+    padding: 12px 20px;
+    border-radius: 30px;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: bold;
+    box-shadow: 0 4px 12px rgba(45, 107, 88, 0.3);
+    transition: all 0.3s ease;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+" onmouseover="this.style.backgroundColor='#1d4a3b'; this.style.transform='translateY(-3px)'; this.style.boxShadow='0 6px 16px rgba(45, 107, 88, 0.4)';" onmouseout="this.style.backgroundColor='#2d6b58'; this.style.transform='none'; this.style.boxShadow='0 4px 12px rgba(45, 107, 88, 0.3)';">
+    <span>←</span> 返回工具箱
+</a>
+</body>
+</html>
