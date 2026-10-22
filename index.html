@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>观梦居 · 图片数据生成器</title>
+    <style>
+        body { font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif; background: #f5f5f0; padding: 40px; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; background: #ffffff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
+        h2 { color: #2d6b58; margin-top: 0; display: flex; align-items: center; gap: 10px; font-size: 20px;}
+        p.subtitle { font-size: 13px; color: #888; margin-bottom: 24px; }
+        
+        label { display: block; font-size: 13px; color: #555; font-weight: bold; margin-bottom: 6px; margin-top: 16px;}
+        input, select { width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 14px; transition: 0.3s; }
+        input:focus, select:focus { border-color: #2d6b58; outline: none; box-shadow: 0 0 0 3px rgba(45,107,88,0.1); }
+        
+        .row { display: flex; gap: 16px; }
+        .col { flex: 1; }
+        
+        button { background: #2d6b58; color: white; border: none; padding: 14px; border-radius: 6px; cursor: pointer; font-size: 15px; font-weight: bold; width: 100%; margin-top: 24px; transition: 0.3s; }
+        button:hover { background: #1d4a3b; }
+        
+        textarea { width: 100%; height: 180px; margin-top: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 6px; font-family: 'Consolas', monospace; box-sizing: border-box; background: #fafafa; font-size: 13px; line-height: 1.5; color: #333;}
+        textarea:focus { outline: none; border-color: #2d6b58; }
+.container {
+    width: 850px;
+    max-width: 95%;
+    height: 80vh;
+    display: flex;
+    flex-direction: column; 
+    justify-content: space-between;
+}
+
+.form-wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly;
+    margin-bottom: 20px; 
+}
+
+.row {
+    display: flex;
+    gap: 20px;
+}
+
+.col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+h2 {
+    font-size: 26px;
+    margin-bottom: 10px;
+}
+
+.subtitle {
+    font-size: 16px;
+    color: #666;
+}
+
+label {
+    font-size: 17px;
+    font-weight: bold;
+    color: #333;
+}
+
+input, select {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 16px 15px;
+    font-size: 17px;
+}
+
+button {
+    flex-shrink: 0;
+    padding: 18px; 
+    margin-bottom: 20px;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+#output { 
+    height: 200px;
+    flex-shrink: 0; 
+    resize: none; 
+    width: 100%;
+    box-sizing: border-box;
+    padding: 18px;
+    margin-bottom: 0;
+    font-size: 16px;
+}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>🖼️ 观梦居 · 图片数据生成器</h2>
+        <p class="subtitle">填完表单点生成，代码会自动复制，直接去 main.js 的列表里 Ctrl+V 粘贴即可。</p>
+        
+        <label>1. 图片文件名 (请确认已放入对应文件夹)</label>
+        <input type="text" id="filename" placeholder="例如：img-fh-001.webp">
+
+        <div class="row">
+            <div class="col">
+                <label>2. 标题 (Title)</label>
+                <input type="text" id="title" placeholder="例如：白夜挽歌">
+            </div>
+            <div class="col">
+                <label>3. 日期 (Date)</label>
+                <input type="text" id="date" placeholder="例如：2026.10.25">
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col">
+                <label>4. 分类 (Category)</label>
+                <select id="category">
+                    <option value="繁花">繁花 (自动存 fh)</option>
+                    <option value="败瓦">败瓦 (自动存 bw)</option>
+                    <option value="流光">流光 (自动存 lg)</option>
+                </select>
+            </div>
+            <div class="col">
+                <label>5. 标签 (用逗号隔开)</label>
+                <input type="text" id="tags" placeholder="例如：胶片, 梦核, 观测">
+            </div>
+        </div>
+
+        <label>6. 描述文案 (Desc)</label>
+        <input type="text" id="desc" placeholder="例如：所有被遗忘的梦境，都会在这里重新上映。">
+
+        <button onclick="generateCode()">⚡ 生成并复制代码</button>
+        
+        <textarea id="output" readonly placeholder="生成的代码会出现在这里..."></textarea>
+    </div>
+
+    <script>
+        function generateCode() {
+            const filename = document.getElementById('filename').value.trim() || "img-xxx.webp";
+            const title = document.getElementById('title').value.trim() || "未命名";
+            const date = document.getElementById('date').value.trim() || "2026.01.01";
+            const category = document.getElementById('category').value;
+            let tagsInput = document.getElementById('tags').value;
+            const desc = document.getElementById('desc').value.trim() || "暂无描述";
+            
+            tagsInput = tagsInput.replace(/，/g, ',');
+            
+            const tagsArray = tagsInput ? tagsInput.split(',').map(t => `"${t.trim()}"`).join(', ') : "";
+            const id = filename.split('.')[0];
+
+            let folder = "fh"; 
+            if (category === "败瓦") {
+                folder = "bw";
+            } else if (category === "流光") {
+                folder = "lg";             }
+
+            const code = `  {
+    id: "${id}",
+    title: "${title}",
+    date: "${date}",
+    category: "${category}",
+    tags: [${tagsArray}],
+    src: "assets/img/${folder}/${filename}",
+    desc: "${desc}"
+  },`;
+
+            const outputBox = document.getElementById('output');
+            outputBox.value = code;
+            outputBox.select();
+            document.execCommand('copy');
+            
+            alert("✅ 代码已生成并自动复制！去 main.js 里粘贴吧！\n\n路径已自动分配为: assets/img/" + folder + "/");
+        }
+    </script>
+</body>
+</html>
