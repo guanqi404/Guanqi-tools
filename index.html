@@ -2,44 +2,53 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>观棋 · 个人工作站</title>
+    <title>观梦居 · 专属工作台</title>
     <style>
+        :root {
+            --bg: #f5f5f0; --primary: #2d6b58; --text: #333; --muted: #888;
+            --card-bg: #ffffff; --border: #eaeaea;
+        }
+        
         body { 
             font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif; 
-            background: #f5f5f0; 
+            background: var(--bg); 
             padding: 60px 20px; 
-            color: #333; 
+            color: var(--text); 
             margin: 0;
             display: flex;
             justify-content: center;
         }
+
         .container { 
             width: 100%;
             max-width: 900px; 
         }
+
         h1 { 
-            color: #2d6b58; 
+            color: var(--primary); 
             font-size: 28px; 
             letter-spacing: 2px;
-            margin-bottom: 10px;
+            margin: 0 0 10px 0;
+            font-weight: 700;
         }
+
         p.subtitle { 
             font-size: 14px; 
-            color: #888; 
-            margin-bottom: 40px; 
+            color: var(--muted); 
+            margin: 0 0 40px 0; 
             letter-spacing: 1px;
         }
         
-        /* 网格布局 */
+        /* 自适应网格布局 */
         .tools-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
             gap: 24px;
         }
 
-        /* 工具卡片 */
+        /* 工具卡片样式 */
         .tool-card {
-            background: #ffffff;
+            background: var(--card-bg);
             padding: 24px;
             border-radius: 12px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.03);
@@ -47,56 +56,91 @@
             color: inherit;
             transition: transform 0.3s ease, box-shadow 0.3s ease;
             border: 1px solid rgba(0,0,0,0.02);
-            display: block;
+            display: flex;
+            flex-direction: column;
         }
+        
         .tool-card:hover {
             transform: translateY(-5px);
             box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+            border-color: rgba(45, 107, 88, 0.2);
         }
+        
         .tool-card h3 {
             margin: 0 0 10px 0;
             font-size: 18px;
-            color: #2d6b58;
+            color: var(--primary);
+            font-weight: 600;
         }
+        
         .tool-card p {
             margin: 0;
             font-size: 13px;
             color: #777;
             line-height: 1.6;
+            flex-grow: 1;
         }
         
         /* 状态标签 */
         .status {
             display: inline-block;
-            margin-top: 15px;
+            align-self: flex-start;
+            margin-top: 20px;
             font-size: 12px;
             padding: 4px 10px;
             border-radius: 20px;
             background: rgba(45, 107, 88, 0.08);
-            color: #2d6b58;
+            color: var(--primary);
+        }
+
+        /* 企划中的置灰样式 */
+        .tool-card.disabled {
+            opacity: 0.6; 
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        .tool-card.disabled .status {
+            background: #eee; 
+            color: #999;
         }
     </style>
 </head>
 <body>
+
     <div class="container">
         <h1>QUICK TOOLS</h1>
         <p class="subtitle">观棋 · 专属个人效率工作台</p>
 
         <div class="tools-grid">
-            <!-- 工具 1：图片数据生成器 -->
+            <!-- 工具 1：数据生成器 -->
             <a href="gmj-json-maker.html" class="tool-card">
                 <h3>图片数据生成器</h3>
                 <p>为观梦居画廊快速生成符合格式的 JSON 数据代码，自动分配文件夹路径。</p>
                 <span class="status">已上线</span>
             </a>
 
-            <!-- 占位工具 2：未来扩展 -->
-            <a href="#" class="tool-card" style="opacity: 0.6; cursor: not-allowed;">
-                <h3>更多工具开发中</h3>
-                <p>拼豆管家、灵感记录站、灵感 API 测试... 敬请期待。</p>
-                <span class="status" style="background:#eee; color:#999;">企划中</span>
+            <!-- 工具 2：项目看板 -->
+            <a href="project-board.html" class="tool-card">
+                <h3>个人项目看板</h3>
+                <p>可视化管理观梦居、拼豆管家等所有企划的进度，支持卡片拖拽、任务打勾与数据备份。</p>
+                <span class="status">已上线</span>
             </a>
+
+            <!-- 工具 3：代码收纳盒 -->
+            <a href="code-library.html" class="tool-card">
+                <h3>常用代码收纳盒</h3>
+                <p>集中存放、预览并一键复制悬浮组件、排版样式、交互特效等高频使用的代码片段。</p>
+                <span class="status">已上线</span>
+            </a>
+
+            <!-- 工具 4：占位卡 -->
+            <div class="tool-card disabled">
+                <h3>更多工具开发中</h3>
+                <p>拼豆管家、极简灵感记录站、健康体重面板、AI 语音陪学搭子... 敬请期待。</p>
+                <span class="status">企划中</span>
+            </div>
         </div>
     </div>
+
 </body>
 </html>
