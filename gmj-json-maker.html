@@ -95,7 +95,13 @@ button {
 </head>
 <body>
     <div class="container">
-        <h2>🖼️ 观梦居 · 图片数据生成器</h2>
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+    <h2 style="margin: 0; color: #2d6b58; display: flex; align-items: center; gap: 10px;">🖼️ 观梦居 · 图片数据生成器</h2>
+    <!-- 👇 这里就是跳转按钮 -->
+    <a href="https://squoosh.app/" target="_blank" style="background: rgba(45, 107, 88, 0.05); color: #2d6b58; border: 1px solid #2d6b58; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 13px; font-weight: bold; transition: all 0.3s ease;" onmouseover="this.style.background='#2d6b58'; this.style.color='#fff';" onmouseout="this.style.background='rgba(45, 107, 88, 0.05)'; this.style.color='#2d6b58';">
+        📉 去压缩图片
+    </a>
+</div>
         <p class="subtitle">填完表单点生成，代码会自动复制，直接去 main.js 的列表里 Ctrl+V 粘贴即可。</p>
         
         <label>1. 图片文件名 (请确认已放入对应文件夹)</label>
@@ -173,7 +179,7 @@ button {
             alert("✅ 代码已生成并自动复制！去 main.js 里粘贴吧！\n\n路径已自动分配为: assets/img/" + folder + "/");
         }
     </script>
-    <a href="index.html" style="
+<a href="index.html" style="
     position: fixed;
     bottom: 30px;
     right: 30px;
